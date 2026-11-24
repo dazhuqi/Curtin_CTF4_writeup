@@ -1,6 +1,6 @@
-# Reverse&pwn problem
+# Reverse problem
 
-下面的是本次2026CTF4(2026.11.21)中解出得re和pwn题目writeup
+下面的是本次2026CTF4(2026.11.21)中解出的reverse题目writeup
 
 ## tinylock
 检查文件是ELF可执行文件，x86-64；同时导入函数有fgets、strlen、strcspn、printf，程序会读取并检查一行输入。<br>
