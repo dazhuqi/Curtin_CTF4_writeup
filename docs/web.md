@@ -5,7 +5,7 @@
 ## habour
 这一题就是简单的弱密码爆破，john获取得到弱密码后合成jwt即可
 
-## stagehand
+## stagehand （author：zheng）
 获取index.php，找到一个修改序列化后的字符串的函数。发现修改内容但是长度标记不改，因此可以制造php反序列化错位
 ![sh func](../images/web/sh-1.png)
 
