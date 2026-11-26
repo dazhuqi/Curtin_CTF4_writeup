@@ -51,7 +51,7 @@ const slugify = (value) => value
   .replace(/^-|-$/g, "");
 
 function currentLanguage() {
-  return new URLSearchParams(window.location.search).get("lang") === "en" ? "en" : "zh";
+  return new URLSearchParams(window.location.search).get("lang") === "zh" ? "zh" : "en";
 }
 
 function configureLabels(language) {
