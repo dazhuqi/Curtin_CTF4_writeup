@@ -7,11 +7,11 @@
 
 进入逆向工具分析校验代码：先去掉输入末尾的换行，然后用strlen检查长度必须为0x1e（30bytes）<br>
 接着逐字节比较，任一字节不匹配就输出Nope.；全部匹配则输出成功提示。<br>
-![tl_mainfunc](../images/re&pwn/tinylock-mainfunc.png)
+![tl_mainfunc](../images/reverse/tinylock-mainfunc.png)
 
 rsi指向的4个数据字节作为密钥：13 37 C0 DE
 rdi指向目标traget数据区，即被下述表达式计算得
-![tl_data](../images/re&pwn/tinylock-data.png)
+![tl_data](../images/reverse/tinylock-data.png)
 
 ```text
 target[i] = ((input[i] XOR key[i % 4]) + i) mod 256
@@ -21,13 +21,13 @@ target[i] = ((input[i] XOR key[i % 4]) + i) mod 256
 ```text
 input[i] = ((target[i] - i) mod 256) XOR key[i % 4]
 ```
-![tl_asm](../images/re&pwn/tinylock-asm.png)
+![tl_asm](../images/reverse/tinylock-asm.png)
 
 ## asmaze
 检查文件是ELF可执行文件，ARM AArch64架构<br>
 
 进入工具找到entry，可以看到反编译不完整，直接阅读汇编代码。<br>
-![entryassm](../images/re&pwn/asmaze-entry.png)
+![entryassm](../images/reverse/asmaze-entry.png)
 
 ```C
 n = read(0, buffer, 64);
@@ -47,10 +47,10 @@ r     = (i % 7) + 1
 k     = (0x25 * i + 0x0b) & 0xff
 value = (ROL8(input[i], r) XOR k + previous) & 0xff
 ```
-![entryproc](../images/re&pwn/asmaze-proc.png)
+![entryproc](../images/reverse/asmaze-proc.png)
 
 然后可以看到接续的data，共只找25字节，剩余的是程序用的字符串
-![asmazedata](../images/re&pwn/asmaze-data.png)
+![asmazedata](../images/reverse/asmaze-data.png)
 
 然后逆转运算可得flag
 ```text
@@ -75,7 +75,7 @@ input[i] = VAULT[i] XOR 90 XOR (i AND 15)
 ## thousandcuts
 检查文件是ELF可执行文件，x86-64<br>
 找到main函数，分析逻辑知道先清除了输入缓冲区，如果输入读取失败则返回1程序退出；排除末尾换行后输入需要38字节，校验失败则返回flag校验结果1（True）；若上述都通过则进行逐下标0-37检验，run方法检验下标和对应内容，查看run对应的反汇编代码可知根据index计算操作程序位置，index对应的内容作为操作程序输入，根据各自特定的操作程序判断输入是否符合预期。如果0-37校验全部通过才返回0，程序才输出yes，其余情况均输出no。知道逻辑后写脚本逐位爆破即可<br>
-![tsmainfunc](../images/re&pwn/thousandcuts-mainfunc.png)
+![tsmainfunc](../images/reverse/thousandcuts-mainfunc.png)
 
 ## wasmgate
 题目给了一个WebAssembly文件和一个index.html。先看index.html知道它把输入写进WebAssembly的memory，再调用check(256, 字节长度)<br>
@@ -111,7 +111,7 @@ state = target[i]
 检查文件是ELF x86-64可执行文件。strings可以看到可读字符串，结合题目提示看到疑似门禁码候选项m1n1t3l。<br>
 接着进行逆向分析，知道程序读取输入、去掉换行，再与 PASSWORD 比较。正确输入后，它会把一段数据逐字节与 0x42 做 XOR，再打印结果。<br>
 选择直接去找那段数据进行异或即可知道结果<br>
-![badgemainfunc](../images/re&pwn/badge-mainfunc.png)
+![badgemainfunc](../images/reverse/badge-mainfunc.png)
 
 运气好选项：直接执行该文件，输入m1n1t3l即可得到flag
 
@@ -123,7 +123,7 @@ state = target[i]
 decoded = bytes(((b >> 3) | ((b << 5) & 0xFF)) for b in data)[::-1]
 ```
 
-![kg-mainfunc](../images/re&pwn/key-gate-mainfunc.png)
+![kg-mainfunc](../images/reverse/key-gate-mainfunc.png)
 
 ## flutter vault
 这是一个android apk文件，因为题目使用Flutter，Dart代码经过AOT编译后放在lib/arm64-v8a/libapp.so中，所以重点分析这个文件。<br>
