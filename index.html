@@ -13,6 +13,9 @@
   <body>
     <a class="skip-link" href="#writeups">Skip to writeups</a>
     <header class="site-header" id="top">
+      <button class="nav-toggle" id="nav-toggle" type="button" aria-controls="site-sidebar" aria-expanded="false" aria-label="打开侧边导航" title="打开侧边导航">
+        <span aria-hidden="true">☰</span>
+      </button>
       <a class="brand" href="#top" aria-label="Curtin CTF4 2026 home">
         <span class="brand-mark">C4</span>
         <span class="brand-name">Curtin CTF4 <span>2026</span></span>
@@ -23,17 +26,13 @@
       </div>
     </header>
 
+    <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="关闭侧边导航" hidden></button>
     <div class="page-shell">
-      <aside class="sidebar" aria-label="Writeup navigation">
-        <details class="sidebar-details" open>
-          <summary id="browse-label">浏览题目</summary>
-          <div class="sidebar-content">
-            <p class="sidebar-caption" id="category-label">分类</p>
-            <nav id="category-nav" aria-label="Categories"></nav>
-            <p class="sidebar-caption topic-caption" id="topic-label">题目</p>
-            <nav id="topic-nav" aria-label="Challenges"></nav>
-          </div>
-        </details>
+      <aside class="sidebar" id="site-sidebar" aria-label="题目分类导航">
+        <div class="sidebar-content">
+          <p class="sidebar-caption" id="category-label">分类目录</p>
+          <nav id="category-nav" aria-label="题目分类"></nav>
+        </div>
       </aside>
 
       <main class="main-content" id="writeups">

@@ -1,10 +1,10 @@
 const categories = [
-  { id: "ai", file: "AI.md", title: { zh: "AI", en: "AI" } },
-  { id: "forensics", file: "forensics.md", title: { zh: "取证", en: "Forensics" } },
-  { id: "misc", file: "Misc.md", title: { zh: "杂项", en: "Misc" } },
-  { id: "pwn", file: "pwn.md", title: { zh: "Pwn", en: "Pwn" } },
-  { id: "reverse", file: "reverse.md", title: { zh: "逆向工程", en: "Reverse Engineering" } },
   { id: "web", file: "web.md", title: { zh: "Web", en: "Web" } },
+  { id: "misc", file: "Misc.md", title: { zh: "Misc", en: "Misc" } },
+  { id: "pwn", file: "pwn.md", title: { zh: "Pwn", en: "Pwn" } },
+  { id: "reverse", file: "reverse.md", title: { zh: "Reverse", en: "Reverse" } },
+  { id: "forensics", file: "forensics.md", title: { zh: "Forensics", en: "Forensics" } },
+  { id: "ai", file: "AI.md", title: { zh: "AI", en: "AI" } },
 ];
 
 const copy = {
@@ -12,9 +12,9 @@ const copy = {
     pageTitle: "题解 / Writeups",
     pageDescription: "按分类整理的中英文题目记录。",
     headerLabel: "题解档案",
-    browse: "浏览题目",
-    categories: "分类",
-    topics: "题目",
+    navLabel: "题目分类导航",
+    toggleNav: "打开侧边导航",
+    closeNav: "关闭侧边导航",
     languageLink: "English",
     loadError: "题目内容载入失败，请通过本地 HTTP 服务或 GitHub Pages 打开此页面。",
     loading: "正在载入题目…",
@@ -25,9 +25,9 @@ const copy = {
     pageTitle: "Writeups",
     pageDescription: "Challenge notes, organized by category.",
     headerLabel: "Challenge archive",
-    browse: "Browse challenges",
-    categories: "Categories",
-    topics: "Challenges",
+    navLabel: "Challenge navigation",
+    toggleNav: "Open navigation",
+    closeNav: "Close navigation",
     languageLink: "中文",
     loadError: "The writeups could not be loaded. Open this page through a local HTTP server or GitHub Pages.",
     loading: "Loading writeups…",
@@ -61,9 +61,13 @@ function configureLabels(language) {
   document.getElementById("page-title").textContent = labels.pageTitle;
   document.getElementById("page-description").textContent = labels.pageDescription;
   document.getElementById("header-label").textContent = labels.headerLabel;
-  document.getElementById("browse-label").textContent = labels.browse;
-  document.getElementById("category-label").textContent = labels.categories;
-  document.getElementById("topic-label").textContent = labels.topics;
+  document.getElementById("category-label").textContent = language === "zh" ? "分类目录" : "Categories";
+  document.getElementById("site-sidebar").setAttribute("aria-label", labels.navLabel);
+  document.getElementById("category-nav").setAttribute("aria-label", labels.navLabel);
+  const navToggle = document.getElementById("nav-toggle");
+  navToggle.setAttribute("aria-label", labels.toggleNav);
+  navToggle.title = labels.toggleNav;
+  document.getElementById("sidebar-scrim").setAttribute("aria-label", labels.closeNav);
   document.getElementById("back-to-top").textContent = labels.backToTop;
   document.getElementById("load-status").textContent = labels.loading;
 
@@ -73,6 +77,17 @@ function configureLabels(language) {
   languageLink.href = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
   languageLink.textContent = labels.languageLink;
   languageLink.lang = language === "zh" ? "en" : "zh-CN";
+  languageLink.addEventListener("click", (event) => {
+    event.preventDefault();
+    const target = new URL(window.location.href);
+    target.searchParams.set("lang", language === "zh" ? "en" : "zh");
+    window.location.assign(target.href);
+  });
+  window.addEventListener("hashchange", () => {
+    const target = new URL(window.location.href);
+    target.searchParams.set("lang", language === "zh" ? "en" : "zh");
+    languageLink.href = `${target.pathname}${target.search}${target.hash}`;
+  });
 }
 
 function markdownRenderer(category, sourceUrl) {
@@ -116,38 +131,87 @@ async function loadCategory(category, language, position) {
 
 function buildNavigation(language, renderedSections) {
   const categoryNav = document.getElementById("category-nav");
-  const topicNav = document.getElementById("topic-nav");
-
-  categoryNav.innerHTML = `<ul>${categories.map((category) => `
-    <li><a href="#category-${category.id}">${escapeHtml(category.title[language])}</a></li>
-  `).join("")}</ul>`;
-
-  topicNav.innerHTML = `<ul>${renderedSections.flatMap((section) => {
+  const nodes = renderedSections.map((section, index) => {
+    const category = categories[index];
     const headings = [...section.querySelectorAll(".writeup-body h2, .writeup-body h3")];
-    return headings.map((heading) => `
-      <li class="level-${heading.tagName.slice(1)}"><a href="#${heading.id}">${escapeHtml(heading.textContent)}</a></li>
-    `);
-  }).join("")}</ul>`;
+    const roots = [];
+    const stack = [{ depth: 1, children: roots }];
+
+    for (const heading of headings) {
+      const depth = Number(heading.tagName.slice(1));
+      const node = { id: heading.id, title: heading.textContent, depth, children: [] };
+      while (stack.at(-1).depth >= depth) stack.pop();
+      stack.at(-1).children.push(node);
+      stack.push({ depth, children: node.children });
+    }
+
+    const renderTopics = (items) => items.length ? `<ul>${items.map((item) => `
+      <li class="level-${item.depth}">
+        <a href="#${escapeHtml(item.id)}">${escapeHtml(item.title)}</a>
+        ${renderTopics(item.children)}
+      </li>
+    `).join("")}</ul>` : "";
+
+    return `
+      <li class="category-item">
+        <a class="category-link" href="#category-${category.id}">${escapeHtml(category.title[language])}</a>
+        ${renderTopics(roots)}
+      </li>
+    `;
+  });
+
+  categoryNav.innerHTML = `<ul class="category-tree">${nodes.join("")}</ul>`;
 }
 
 function observeSections() {
   if (!("IntersectionObserver" in window)) return;
-  const links = [...document.querySelectorAll("#category-nav a, #topic-nav a")];
+  const links = [...document.querySelectorAll("#category-nav a")];
   const linkById = new Map(links.map((link) => [decodeURIComponent(link.hash.slice(1)), link]));
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
-      for (const link of links) link.classList.remove("active");
-      linkById.get(entry.target.id)?.classList.add("active");
+      for (const link of links) {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
+      }
+      const activeLink = linkById.get(entry.target.id);
+      activeLink?.classList.add("active");
+      activeLink?.setAttribute("aria-current", "location");
     }
   }, { rootMargin: "-18% 0px -70% 0px" });
 
   document.querySelectorAll(".writeup-section, .writeup-body h2, .writeup-body h3").forEach((node) => observer.observe(node));
 }
 
+function configureSidebar() {
+  const sidebar = document.getElementById("site-sidebar");
+  const toggle = document.getElementById("nav-toggle");
+  const scrim = document.getElementById("sidebar-scrim");
+  const narrowViewport = window.matchMedia("(max-width: 600px)");
+
+  const setOpen = (open) => {
+    sidebar.classList.toggle("is-open", open);
+    scrim.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+  };
+
+  toggle.addEventListener("click", () => setOpen(toggle.getAttribute("aria-expanded") !== "true"));
+  scrim.addEventListener("click", () => setOpen(false));
+  sidebar.addEventListener("click", (event) => {
+    if (narrowViewport.matches && event.target.closest("a")) setOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setOpen(false);
+  });
+  narrowViewport.addEventListener("change", (event) => {
+    if (!event.matches) setOpen(false);
+  });
+}
+
 async function start() {
   const language = currentLanguage();
   configureLabels(language);
+  configureSidebar();
 
   if (!window.marked) {
     document.getElementById("load-status").classList.add("error");
@@ -162,9 +226,6 @@ async function start() {
     buildNavigation(language, sections);
     document.getElementById("load-status").remove();
     observeSections();
-
-    const sidebar = document.querySelector(".sidebar-details");
-    if (window.matchMedia("(max-width: 800px)").matches) sidebar.open = false;
   } catch (error) {
     const status = document.getElementById("load-status");
     status.classList.add("error");
