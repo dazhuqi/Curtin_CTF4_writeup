@@ -183,3 +183,11 @@ plain[i] = mask[i] XOR SHA256(UTF8(PIN))[i mod 32] XOR ((i * 13 + 7) AND 255)
 state = (state * 0x41c64e6d + 0x3039) mod 2^32
 plain[i] = cipher[i] XOR ((state >> 16) AND 0xff)
 ```
+
+## notenest
+看到逻辑在classes2.dex里面，展开`com.notenest -> DiagnosticsActivity`，看到`<clinit>`、`decodeHex`和`onCreate`。
+    - 读取`<clinit>`。它构建ENCODED_KEYS五根base64弦的阵列。把它们复制出来，用base64解码来获取资源名称（sync_batch_token等等）。
+    - 读取`onCreate`。反编译器或列表显示循环：对每个键进行base64解码，调用getIdentifier（name， “string”， pkg）， 再调用getString，然后decodeHex，然后附加结果。
+    - 读取`decodeHex`。它每次两个字符逐步处理字符串，调用`parseInt（...， 16）`， 并将每个结果映射为一个字符。
+
+取出五个value，按数组给出的顺序，逐个十六进制解码并将它们连接起来即可获得flag
